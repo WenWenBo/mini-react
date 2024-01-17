@@ -4,8 +4,8 @@ function createTextElement(text) {
         type: 'TEXT_ELEMENT',
         props: {
             nodeValue: text,
-            children: []
-        }
+            children: [],
+        },
     }
 }
 
@@ -15,10 +15,11 @@ function createElement(type, props, ...children) {
         props: {
             ...props,
             children: children.map((child) => {
-                const isTextNode = typeof child === 'string' || typeof child === 'number'
+                const isTextNode =
+                    typeof child === 'string' || typeof child === 'number'
                 return isTextNode ? createTextElement(child) : child
-            })
-        }
+            }),
+        },
     }
 }
 
@@ -34,8 +35,8 @@ function render(el, container) {
     nextWorkOfUnit = {
         dom: container,
         props: {
-            children: [el]
-        }
+            children: [el],
+        },
     }
 
     root = nextWorkOfUnit
@@ -65,9 +66,8 @@ function commitRoot() {
     root = null // 只添加一次
 }
 
-
 function commitWork(fiber) {
-    if (!fiber) return;
+    if (!fiber) return
 
     // FC 是一个函数，没有dom，递归网上找
     let fiberParent = fiber.parent
@@ -84,8 +84,8 @@ function commitWork(fiber) {
 
 function createDom(type) {
     return type === 'TEXT_ELEMENT'
-    ? document.createTextNode('')
-    : document.createElement(type)
+        ? document.createTextNode('')
+        : document.createElement(type)
 }
 
 function updateProps(dom, props) {
@@ -105,11 +105,11 @@ function initChildren(fiber, children) {
             child: null,
             parent: fiber,
             sibling: null,
-            dom: null
+            dom: null,
         }
 
         if (index === 0) {
-            fiber.child = newFiber;
+            fiber.child = newFiber
         } else {
             prevChild.sibling = newFiber
         }
@@ -125,9 +125,9 @@ function updateFunctionComponent(fiber) {
 function updateHostComponent(fiber) {
     if (!fiber.dom) {
         const dom = (fiber.dom = createDom(fiber.type))
-        
+
         // fiber.parent.dom.append(dom)
-        
+
         updateProps(dom, fiber.props)
     }
 
@@ -156,7 +156,7 @@ function performWorkOfUnit(fiber) {
     }
 
     let nextFiber = fiber
-    while(nextFiber) {
+    while (nextFiber) {
         if (nextFiber.sibling) {
             return nextFiber.sibling
         }
@@ -168,7 +168,7 @@ requestIdleCallback(workLoop)
 
 const React = {
     render,
-    createElement
+    createElement,
 }
 
 export default React
