@@ -190,6 +190,12 @@ function reconcileChildren(fiber, children) {
         }
         prevChild = newFiber
     })
+
+    // 删掉多余的节点
+    while (oldFiber) {
+        deletions.push(oldFiber)
+        oldFiber = oldFiber.sibling // 多个兄弟节点循环删除
+    }
 }
 
 function updateFunctionComponent(fiber) {
