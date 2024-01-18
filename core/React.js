@@ -46,6 +46,7 @@ function render(el, container) {
 let wipRoot = null
 let currentRoot = null
 let nextWorkOfUnit = null
+let deletions = []
 function workLoop(deadline) {
     let shouldYield = false
 
@@ -64,9 +65,15 @@ function workLoop(deadline) {
 }
 
 function commitRoot() {
+    deletions.forEach(commitDeletion)
     commitWork(wipRoot.child)
     currentRoot = wipRoot // 保留根节点，用于更新
     wipRoot = null // 只添加一次
+    deletions = []
+}
+
+function commitDeletion(fiber) {
+    fiber.parent.dom.removeChild(fiber.dom)
 }
 
 function commitWork(fiber) {
@@ -155,6 +162,11 @@ function reconcileChildren(fiber, children) {
                 sibling: null,
                 dom: null,
                 effectTag: 'placement',
+            }
+
+            if (oldFiber) {
+                console.log('should delete', oldFiber)
+                deletions.push(oldFiber)
             }
         }
 

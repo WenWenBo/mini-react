@@ -69,3 +69,13 @@ requestIdleCallback 如果剩余时间一直不够，就会导致渲染被阻塞
 3. 如何 diff props —— updateProps
 
 ### 代码命名重构
+
+## day06
+
+### diff-更新 children
+
+标签 type 不一致时，删除旧的创建新的
+
+### diff-删除多余的老节点
+
+新的节点树比老的节点树短的时候，删掉多余的节点
