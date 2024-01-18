@@ -47,12 +47,18 @@ let wipRoot = null
 let currentRoot = null
 let nextWorkOfUnit = null
 let deletions = []
+let wipFiber = null
 function workLoop(deadline) {
     let shouldYield = false
 
     while (!shouldYield && nextWorkOfUnit) {
         // 当前任务执行完之后要返回下一个任务，关联
         nextWorkOfUnit = performWorkOfUnit(nextWorkOfUnit)
+
+        if (wipRoot?.sibling?.type === nextWorkOfUnit?.type) {
+            console.log('hit', wipRoot, nextWorkOfUnit)
+            nextWorkOfUnit = null
+        }
 
         shouldYield = deadline.timeRemaining() < 1
     }
@@ -206,6 +212,7 @@ function reconcileChildren(fiber, children) {
 }
 
 function updateFunctionComponent(fiber) {
+    wipFiber = fiber
     const children = [fiber.type(fiber.props)]
     reconcileChildren(fiber, children)
 }
@@ -256,13 +263,23 @@ requestIdleCallback(workLoop)
 
 // 用 currentRoot 来创建新的 dom 树
 function update() {
-    wipRoot = {
-        dom: currentRoot.dom,
-        props: currentRoot.props,
-        alternate: currentRoot, // 根节点指向旧 dom 树的根节点
-    }
+    let currentFiber = wipFiber
+    return () => {
+        console.log(currentFiber)
 
-    nextWorkOfUnit = wipRoot
+        // 指向要跟新的节点
+        wipRoot = {
+            ...currentFiber,
+            alternate: currentFiber,
+        }
+        // wipRoot = {
+        //     dom: currentRoot.dom,
+        //     props: currentRoot.props,
+        //     alternate: currentRoot, // 根节点指向旧 dom 树的根节点
+        // }
+
+        nextWorkOfUnit = wipRoot
+    }
 }
 
 const React = {
