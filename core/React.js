@@ -163,14 +163,17 @@ function reconcileChildren(fiber, children) {
                 alternate: oldFiber, // 指向旧节点
             }
         } else {
-            newFiber = {
-                type: child.type,
-                props: child.props,
-                child: null,
-                parent: fiber,
-                sibling: null,
-                dom: null,
-                effectTag: 'placement',
+            // 创建节点时如果没有child则不创建 —— edge case情况可能传入一个表达式
+            if (child) {
+                newFiber = {
+                    type: child.type,
+                    props: child.props,
+                    child: null,
+                    parent: fiber,
+                    sibling: null,
+                    dom: null,
+                    effectTag: 'placement',
+                }
             }
 
             if (oldFiber) {
@@ -188,7 +191,11 @@ function reconcileChildren(fiber, children) {
         } else {
             prevChild.sibling = newFiber
         }
-        prevChild = newFiber
+
+        // 有可能为空表达式
+        if (newFiber) {
+            prevChild = newFiber
+        }
     })
 
     // 删掉多余的节点
