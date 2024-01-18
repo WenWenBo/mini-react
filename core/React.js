@@ -73,7 +73,16 @@ function commitRoot() {
 }
 
 function commitDeletion(fiber) {
-    fiber.parent.dom.removeChild(fiber.dom)
+    if (fiber.dom) {
+        // FC 是一个函数，没有dom，递归网上找
+        let fiberParent = fiber.parent
+        while (!fiberParent.dom) {
+            fiberParent = fiberParent.parent
+        }
+        fiberParent.dom.removeChild(fiber.dom)
+    } else {
+        commitDeletion(fiber.child)
+    }
 }
 
 function commitWork(fiber) {
