@@ -46,12 +46,19 @@ function render(el, container) {
 let wipRoot = null
 let currentRoot = null
 let nextWorkOfUnit = null
+let deletions = []
+let wipFiber = null
 function workLoop(deadline) {
     let shouldYield = false
 
     while (!shouldYield && nextWorkOfUnit) {
         // 当前任务执行完之后要返回下一个任务，关联
         nextWorkOfUnit = performWorkOfUnit(nextWorkOfUnit)
+
+        if (wipRoot?.sibling?.type === nextWorkOfUnit?.type) {
+            console.log('hit', wipRoot, nextWorkOfUnit)
+            nextWorkOfUnit = null
+        }
 
         shouldYield = deadline.timeRemaining() < 1
     }
@@ -64,9 +71,24 @@ function workLoop(deadline) {
 }
 
 function commitRoot() {
+    deletions.forEach(commitDeletion)
     commitWork(wipRoot.child)
     currentRoot = wipRoot // 保留根节点，用于更新
     wipRoot = null // 只添加一次
+    deletions = []
+}
+
+function commitDeletion(fiber) {
+    if (fiber.dom) {
+        // FC 是一个函数，没有dom，递归网上找
+        let fiberParent = fiber.parent
+        while (!fiberParent.dom) {
+            fiberParent = fiberParent.parent
+        }
+        fiberParent.dom.removeChild(fiber.dom)
+    } else {
+        commitDeletion(fiber.child)
+    }
 }
 
 function commitWork(fiber) {
@@ -147,14 +169,22 @@ function reconcileChildren(fiber, children) {
                 alternate: oldFiber, // 指向旧节点
             }
         } else {
-            newFiber = {
-                type: child.type,
-                props: child.props,
-                child: null,
-                parent: fiber,
-                sibling: null,
-                dom: null,
-                effectTag: 'placement',
+            // 创建节点时如果没有child则不创建 —— edge case情况可能传入一个表达式
+            if (child) {
+                newFiber = {
+                    type: child.type,
+                    props: child.props,
+                    child: null,
+                    parent: fiber,
+                    sibling: null,
+                    dom: null,
+                    effectTag: 'placement',
+                }
+            }
+
+            if (oldFiber) {
+                console.log('should delete', oldFiber)
+                deletions.push(oldFiber)
             }
         }
 
@@ -167,11 +197,22 @@ function reconcileChildren(fiber, children) {
         } else {
             prevChild.sibling = newFiber
         }
-        prevChild = newFiber
+
+        // 有可能为空表达式
+        if (newFiber) {
+            prevChild = newFiber
+        }
     })
+
+    // 删掉多余的节点
+    while (oldFiber) {
+        deletions.push(oldFiber)
+        oldFiber = oldFiber.sibling // 多个兄弟节点循环删除
+    }
 }
 
 function updateFunctionComponent(fiber) {
+    wipFiber = fiber
     const children = [fiber.type(fiber.props)]
     reconcileChildren(fiber, children)
 }
@@ -222,13 +263,23 @@ requestIdleCallback(workLoop)
 
 // 用 currentRoot 来创建新的 dom 树
 function update() {
-    wipRoot = {
-        dom: currentRoot.dom,
-        props: currentRoot.props,
-        alternate: currentRoot, // 根节点指向旧 dom 树的根节点
-    }
+    let currentFiber = wipFiber
+    return () => {
+        console.log(currentFiber)
 
-    nextWorkOfUnit = wipRoot
+        // 指向要跟新的节点
+        wipRoot = {
+            ...currentFiber,
+            alternate: currentFiber,
+        }
+        // wipRoot = {
+        //     dom: currentRoot.dom,
+        //     props: currentRoot.props,
+        //     alternate: currentRoot, // 根节点指向旧 dom 树的根节点
+        // }
+
+        nextWorkOfUnit = wipRoot
+    }
 }
 
 const React = {
