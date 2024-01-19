@@ -1,36 +1,18 @@
 import React from './core/React.js'
 
-let countFoo = 1
 function Foo() {
-    console.log('foo render')
-    const update = React.update()
+    const [count, setCount] = React.useState(10)
+    const [bar, setBar] = React.useState('bar')
     function handleClick() {
-        countFoo++
-        update()
+        setCount((c) => c + 1)
+        setBar((prev) => prev + 'bar')
     }
 
     return (
         <div>
             <h1>foo</h1>
-            {countFoo}
-            <button onClick={handleClick}>click</button>
-        </div>
-    )
-}
-
-let countBar = 1
-function Bar() {
-    console.log('bar render')
-    const update = React.update()
-    function handleClick() {
-        countBar++
-        update()
-    }
-
-    return (
-        <div>
-            <h1>bar</h1>
-            {countBar}
+            {count}
+            <div>{bar}</div>
             <button onClick={handleClick}>click</button>
         </div>
     )
@@ -38,19 +20,10 @@ function Bar() {
 
 let countRoot = 1
 function App() {
-    console.log('app render')
-
-    const update = React.update()
-    function handleClick() {
-        countRoot++
-        update()
-    }
     return (
         <div>
             hi-mini-react count: {countRoot}
-            <button onClick={handleClick}>click</button>
             <Foo></Foo>
-            <Bar></Bar>
         </div>
     )
 }
