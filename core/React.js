@@ -292,15 +292,27 @@ function useState(initState) {
     const oldHook = currentFiber.alternate?.stateHooks[stateHookIndex]
     const stateHook = {
         state: oldHook ? oldHook.state : initState,
+        queue: oldHook ? oldHook.queue : [],
     }
+
+    stateHook.queue.forEach((action) => {
+        stateHook.state = action(stateHook.state)
+    })
 
     stateHookIndex++
     stateHooks.push(stateHook)
+    stateHook.queue = []
 
     currentFiber.stateHooks = stateHooks // 将状态存下来
 
     function setState(action) {
-        stateHook.state = action(stateHook.state)
+        const predictiveState =
+            typeof action === 'function' ? action(stateHook.state) : action
+        if (predictiveState === stateHook.state) return
+
+        stateHook.queue.push(
+            typeof action === 'function' ? action : () => action
+        )
 
         // 更新
         wipRoot = {
