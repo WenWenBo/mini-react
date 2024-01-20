@@ -212,6 +212,8 @@ function reconcileChildren(fiber, children) {
 }
 
 function updateFunctionComponent(fiber) {
+    stateHooks = [] // 初始化 useState hooks 数组
+    stateHookIndex = 0 // 初始化初始化 useSate hooks 下标
     wipFiber = fiber
     const children = [fiber.type(fiber.props)]
     reconcileChildren(fiber, children)
@@ -282,8 +284,51 @@ function update() {
     }
 }
 
+let stateHooks = null
+let stateHookIndex
+function useState(initState) {
+    let currentFiber = wipFiber
+    // stateHook 每次都会重新声明，需要将之前的状态存到之前的节点上，如果已经初始化过就用之前的
+    const oldHook = currentFiber.alternate?.stateHooks[stateHookIndex]
+    const stateHook = {
+        state: oldHook ? oldHook.state : initState,
+        queue: oldHook ? oldHook.queue : [],
+    }
+
+    stateHook.queue.forEach((action) => {
+        stateHook.state = action(stateHook.state)
+    })
+
+    stateHookIndex++
+    stateHooks.push(stateHook)
+    stateHook.queue = []
+
+    currentFiber.stateHooks = stateHooks // 将状态存下来
+
+    function setState(action) {
+        const predictiveState =
+            typeof action === 'function' ? action(stateHook.state) : action
+        if (predictiveState === stateHook.state) return
+
+        stateHook.queue.push(
+            typeof action === 'function' ? action : () => action
+        )
+
+        // 更新
+        wipRoot = {
+            ...currentFiber,
+            alternate: currentFiber,
+        }
+
+        nextWorkOfUnit = wipRoot
+    }
+
+    return [stateHook.state, setState]
+}
+
 const React = {
     render,
+    useState,
     update,
     createElement,
 }
